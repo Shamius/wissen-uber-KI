@@ -44,6 +44,22 @@ button:focus-visible,input:focus-visible{outline:3px solid #68acef;outline-offse
 .resultactions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
 footer{text-align:center;color:#94a0ac;font-size:12px;margin-top:20px}
 @media(max-width:520px){main{margin:18px auto 30px}header small{display:none}.option{padding:14px}.actions{align-items:stretch}.action-right{flex:1;justify-content:flex-end}.action-right .primary{flex:1}.quiet{font-size:14px}}
+
+.reviewlist{display:grid;gap:14px;margin:19px 0}
+.reviewcard{border:1px solid var(--line);border-radius:16px;padding:20px;background:#fbfcff}
+.reviewmeta{color:#456880;font-size:13px;font-weight:700;margin:0 0 8px}
+.reviewquestion{font-size:17px;font-weight:740;line-height:1.48;color:var(--text);margin:0 0 17px}
+.answerrow{margin:10px 0;font-size:14px;line-height:1.5}
+.answerlabel{color:var(--muted);font-weight:650;display:block;margin-bottom:4px}
+.answertext{display:block;border-radius:9px;background:#f1f5fa;padding:11px 13px;line-height:1.55}
+.answertext.right{background:#e8f6f2}
+.reason{margin-top:14px;padding:13px 14px;border-left:3px solid #a6c7dc;background:#f0f6fa;border-radius:0 10px 10px 0;line-height:1.55;font-size:14px}
+.reason p{margin:0 0 9px}.reason p:last-child{margin-bottom:0}
+.reviewtoggle{margin:4px 0 29px}
+#reviewSection{margin-top:34px;padding-top:4px}
+#reviewSection h2{margin-bottom:9px}
+@media(max-width:520px){.reviewcard{padding:16px}}
+
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
@@ -78,6 +94,12 @@ footer{text-align:center;color:#94a0ac;font-size:12px;margin-top:20px}
 <h2>Результаты по темам</h2>
 <p class="muted">Так видно, в каких разделах у тебя уже есть опора, а к каким полезно вернуться. Баллы отражают ответы на вопросы, а не фактические навыки в работе.</p>
 <div id="topics"></div>
+<section id="reviewSection" aria-labelledby="reviewHeading">
+  <h2 id="reviewHeading">Разбор ответов</h2>
+  <p class="muted" id="reviewLead"></p>
+  <div id="reviewList" class="reviewlist"></div>
+  <button id="toggleReview" class="outline reviewtoggle" type="button" aria-expanded="false">Показать все вопросы</button>
+</section>
 <div class="privacy"><strong>Ответы никому не отправлялись.</strong> Результат можно скопировать или скачать, чтобы сохранить для себя.</div>
 <div class="resultactions">
 <button id="copy" class="primary">Скопировать результат</button>
