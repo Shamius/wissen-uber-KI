@@ -3,9 +3,9 @@ const $=id=>document.getElementById(id);
 const TOTAL=QUESTION_DATA.length;
 const questions=QUESTION_DATA.map((r,i)=>({
   id:i+1, topic:r[0], multiple:r[1]==="m", text:r[2],
-  options:r[3], correct:r[4].split("").map(letter=>letter.charCodeAt(0)-65)
+  options:r[3], rationale:r[5], correct:r[4].split("").map(letter=>letter.charCodeAt(0)-65)
 }));
-let sequence=[],position=0,answers=new Map(),resultText="";
+let sequence=[],position=0,answers=new Map(),resultText="",reviewAll=false;
 function shuffled(array){
   const arr=array.slice();
   for(let i=arr.length-1;i>0;i--){
@@ -18,7 +18,7 @@ function show(id){
   for(const name of ["intro","quiz","result"])$(name).classList.toggle("hide",name!==id);
 }
 function start(){
-  answers=new Map();position=0;resultText="";
+  answers=new Map();position=0;resultText="";reviewAll=false;
   sequence=shuffled(questions).map(q=>({q,order:shuffled([0,1,2,3])}));
   show("quiz");render();
   window.scrollTo({top:0,behavior:"instant"});
@@ -106,24 +106,123 @@ function results(){
     return {name,correct:group.filter(isCorrect).length,total:group.length};
   });
 }
-function buildText(rows,score,skipped){
-  return "ИИ для УОБР — результат диагностики до обучения\n"+
-    "Итого: "+score+" из "+TOTAL+"\n"+
-    "Пропущено: "+skipped+"\n\n"+
-    "По темам:\n"+rows.map(row=>row.name+": "+row.correct+" из "+row.total).join("\n")+
-    "\n\nРезультат отражает ответы на вопросы, а не практические навыки.";
+
+function chosen(q){
+  const value=answers.get(q.id);
+  return Array.isArray(value)?value:[];
+}
+function skipped(q){return answers.get(q.id)===null}
+function wrongQuestions(){return sequence.filter(item=>!isCorrect(item.q))}
+function formatOptions(q,indices){
+  return indices.length?indices.map(i=>q.options[i]).join("; "):"Нет ответа";
+}
+function explanationLines(q){
+  const selected=chosen(q),correct=q.correct;
+  const lines=[];
+  if(q.multiple){
+    for(const idx of selected.filter(i=>correct.includes(i)))lines.push(["Выбрано верно",idx]);
+    for(const idx of selected.filter(i=>!correct.includes(i)))lines.push(["Выбрано лишнее",idx]);
+    for(const idx of correct.filter(i=>!selected.includes(i)))lines.push(["Не выбрано, но верно",idx]);
+  }else{
+    if(selected.length && !correct.includes(selected[0]))lines.push(["Почему выбранный ответ не подходит",selected[0]]);
+    for(const idx of correct)lines.push(["Почему это решение верно",idx]);
+  }
+  return lines;
+}
+function buildText(rows,score,missedCount){
+  const skippedCount=questions.filter(skipped).length;
+  const parts=[
+    "ИИ для УОБР — результат диагностики до обучения",
+    "Итого: "+score+" из "+TOTAL,
+    "Неверных и пропущенных: "+missedCount,
+    "Пропущено: "+skippedCount,
+    "",
+    "По темам:",
+    ...rows.map(r=>r.name+": "+r.correct+" из "+r.total)
+  ];
+  const bad=wrongQuestions();
+  if(bad.length){
+    parts.push("","Разбор неверных и пропущенных ответов:");
+    bad.forEach((item)=>{
+      const q=item.q;
+      parts.push("","Вопрос: "+q.text);
+      parts.push("Ваш ответ: "+formatOptions(q,chosen(q)));
+      parts.push("Верно: "+formatOptions(q,q.correct));
+      explanationLines(q).forEach(([label,index])=>parts.push(label+" — "+q.options[index]+". "+q.rationale[index]));
+    });
+  }
+  parts.push("","Результат отражает ответы на вопросы, а не практические навыки.");
+  return parts.join("\n");
+}
+function addAnswerRow(card,labelText,value,isRight){
+  const outer=document.createElement("div");
+  outer.className="answerrow";
+  const label=document.createElement("span");
+  label.className="answerlabel";
+  label.textContent=labelText;
+  const valueNode=document.createElement("span");
+  valueNode.className="answertext"+(isRight?" right":"");
+  valueNode.textContent=value;
+  outer.append(label,valueNode);card.append(outer);
+}
+function createReviewCard(item,seqIndex){
+  const q=item.q,card=document.createElement("div");
+  card.className="reviewcard";
+  const meta=document.createElement("p");
+  meta.className="reviewmeta";
+  meta.textContent="Вопрос "+(seqIndex+1)+" · "+TOPIC_NAMES[q.topic]+
+    " · "+(skipped(q)?"Пропущен":isCorrect(q)?"Верно":"Ошибка");
+  const prompt=document.createElement("p");
+  prompt.className="reviewquestion";
+  prompt.textContent=q.text;
+  card.append(meta,prompt);
+  addAnswerRow(card,"Твой ответ",formatOptions(q,chosen(q)),false);
+  addAnswerRow(card,"Правильный ответ",formatOptions(q,q.correct),true);
+  const reason=document.createElement("div");
+  reason.className="reason";
+  const lines=explanationLines(q);
+  for(const [label,index] of lines){
+    const p=document.createElement("p");
+    const strong=document.createElement("strong");
+    strong.textContent=label+": ";
+    p.append(strong,document.createTextNode(q.rationale[index]));
+    reason.append(p);
+  }
+  card.append(reason);
+  return card;
+}
+function renderReview(){
+  const errors=wrongQuestions();
+  const entries=reviewAll?sequence:errors;
+  const root=$("reviewList");
+  root.replaceChildren();
+  if(!entries.length){
+    const noErrors=document.createElement("p");
+    noErrors.className="muted";
+    noErrors.textContent="Ошибок нет. Можно открыть объяснения ко всем вопросам.";
+    root.append(noErrors);
+  }else{
+    for(const item of entries)root.append(createReviewCard(item,sequence.indexOf(item)));
+  }
+  $("reviewLead").textContent=errors.length?
+    "Неверных и пропущенных ответов: "+errors.length+
+      ". Ниже можно увидеть свои ответы, верные варианты и причины расхождений.":
+    "Все ответы верные.";
+  $("toggleReview").textContent=reviewAll?"Показывать только ошибки":"Показать разбор всех вопросов";
+  $("toggleReview").setAttribute("aria-expanded",String(reviewAll));
 }
 function complete(){
   const rows=results();
   const score=rows.reduce((sum,r)=>sum+r.correct,0);
-  const skipped=questions.filter(q=>answers.get(q.id)===null).length;
-  resultText=buildText(rows,score,skipped);
+  const skippedCount=questions.filter(skipped).length;
+  const errors=wrongQuestions().length;
+  resultText=buildText(rows,score,errors);
   $("score").replaceChildren();
   const total=document.createElement("span");
   total.textContent=" / "+TOTAL+" баллов";
   $("score").append(document.createTextNode(String(score)),total);
   $("summary").textContent=
-    "Ты ответил на "+(TOTAL-skipped)+" вопросов и пропустил "+skipped+
+    "Ты ответил на "+(TOTAL-skippedCount)+" вопросов и пропустил "+skippedCount+
     ". Это срез текущих знаний: его удобно использовать как отправную точку перед обучением.";
   const root=$("topics");
   root.replaceChildren();
@@ -145,6 +244,8 @@ function complete(){
     wrapper.append(head,track);
     root.append(wrapper);
   }
+  reviewAll=false;
+  renderReview();
   $("status").textContent="";
   show("result");
   window.scrollTo({top:0,behavior:"instant"});
@@ -173,3 +274,4 @@ $("skip").addEventListener("click",skip);
 $("restart").addEventListener("click",start);
 $("copy").addEventListener("click",copyResult);
 $("download").addEventListener("click",downloadResult);
+$("toggleReview").addEventListener("click",()=>{reviewAll=!reviewAll;renderReview()});
