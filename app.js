@@ -3,7 +3,7 @@ const $=id=>document.getElementById(id);
 const TOTAL=QUESTION_DATA.length;
 const questions=QUESTION_DATA.map((r,i)=>({
   id:i+1, topic:r[0], multiple:r[1]==="m", text:r[2],
-  options:r[3], rationale:r[5], correct:r[4].split("").map(letter=>letter.charCodeAt(0)-65)
+  options:r[3], rationale:r[5], explanation:r[6], correct:r[4].split("").map(letter=>letter.charCodeAt(0)-65)
 }));
 let sequence=[],position=0,answers=new Map(),resultText="",reviewAll=false;
 function shuffled(array){
@@ -19,7 +19,7 @@ function show(id){
 }
 function start(){
   answers=new Map();position=0;resultText="";reviewAll=false;
-  sequence=shuffled(questions).map(q=>({q,order:shuffled([0,1,2,3])}));
+  sequence=shuffled(questions).map(q=>({q,order:shuffled(q.options.map((_,i)=>i))}));
   show("quiz");render();
   window.scrollTo({top:0,behavior:"instant"});
 }
@@ -148,6 +148,7 @@ function buildText(rows,score,missedCount){
       parts.push("","Вопрос: "+q.text);
       parts.push("Ваш ответ: "+formatOptions(q,chosen(q)));
       parts.push("Верно: "+formatOptions(q,q.correct));
+      parts.push("Объяснение: "+q.explanation);
       explanationLines(q).forEach(([label,index])=>parts.push(label+" — "+q.options[index]+". "+q.rationale[index]));
     });
   }
@@ -188,6 +189,11 @@ function createReviewCard(item,seqIndex){
     p.append(strong,document.createTextNode(q.rationale[index]));
     reason.append(p);
   }
+  const explanation=document.createElement("p");
+  const heading=document.createElement("strong");
+  heading.textContent="Объяснение: ";
+  explanation.append(heading,document.createTextNode(q.explanation));
+  reason.prepend(explanation);
   card.append(reason);
   return card;
 }
