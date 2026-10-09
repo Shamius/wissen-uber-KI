@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#172e49">
+<title>ИИ для УОБР — диагностика перед обучением</title>
+<style>
+:root{--bg:#f4f7fb;--white:#fff;--text:#1a3048;--muted:#637588;--blue:#245bc4;--line:#dbe5ef;--green:#008879}
+*{box-sizing:border-box}body{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;margin:0;background:radial-gradient(ellipse at 95% 0%,#dbeaff,transparent 43%),var(--bg);color:var(--text);min-height:100vh}
+main{width:min(880px,calc(100% - 28px));margin:32px auto 48px}
+header{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:18px;font-size:13px;font-weight:750;letter-spacing:.08em;color:#193450}
+header small{font-size:13px;letter-spacing:normal;color:var(--muted);font-weight:500}
+article{border-radius:22px;background:var(--white);border:1px solid var(--line);padding:clamp(22px,5vw,44px);box-shadow:0 18px 48px rgba(24,55,89,.065)}
+.hide{display:none!important}.eyebrow{color:var(--green);font-size:13px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}
+h1{font-size:clamp(31px,5.5vw,48px);line-height:1.12;letter-spacing:-.04em;color:#142b44;margin:15px 0 17px}
+h2{font-size:clamp(23px,3.5vw,32px);line-height:1.27;letter-spacing:-.025em;color:#142b44;margin:20px 0 12px}
+.lead{font-size:18px;line-height:1.57;color:#496078;max-width:700px}
+.muted{color:var(--muted);line-height:1.52}
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin:26px 0}
+.chip{background:#f0f6ff;border:1px solid var(--line);border-radius:40px;padding:8px 12px;color:#385c7e;font-weight:650;font-size:13px}
+.privacy{margin:0 0 25px;border-left:3px solid var(--green);background:#eff8f6;color:#315b56;padding:14px 16px;font-size:14px;line-height:1.6;border-radius:0 12px 12px 0}
+button{cursor:pointer;font:inherit;font-weight:720;padding:14px 20px;border-radius:12px;border:0;transition:background .15s}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid #68acef;outline-offset:2px}
+.primary{color:white;background:var(--blue)}.primary:hover:not(:disabled){background:#194aab}
+.outline{background:white;color:var(--text);border:1px solid var(--line)}.outline:hover:not(:disabled){background:#f4f7fc}
+.quiet{background:transparent;color:var(--muted);padding:13px 9px}.quiet:hover{background:#f3f6fa}
+.small{font-size:13px;color:var(--muted);line-height:1.55;margin:18px 0 0}
+.top{display:flex;justify-content:space-between;gap:15px;color:var(--muted);font-size:14px;font-weight:650}
+.progress{height:9px;background:#eaf0f7;border-radius:99px;overflow:hidden;margin:13px 0 30px}
+.progress div{height:100%;width:0;background:linear-gradient(90deg,#008879,#2f79d1);transition:width .2s}
+.type{display:inline-block;background:#eef4ff;color:#2e5da2;border-radius:9px;font-size:13px;font-weight:700;padding:8px 12px}
+.options{display:grid;gap:12px;margin:24px 0 0}
+.option{display:flex;align-items:flex-start;gap:13px;cursor:pointer;padding:16px;border:1.5px solid var(--line);border-radius:14px;line-height:1.5;background:white}
+.option:hover{background:#fafcff;border-color:#a5bae3}.option.selected{background:#edf4ff;border-color:var(--blue)}
+.option input{height:19px;width:19px;min-width:19px;margin:2px 0 0;accent-color:var(--blue)}
+.actions{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-top:27px;background:linear-gradient(0deg,white 85%,rgba(255,255,255,0));position:sticky;bottom:0;padding-top:17px}
+.action-right{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.score{font-size:clamp(56px,9vw,82px);letter-spacing:-.065em;font-weight:850;line-height:1;color:#142b44;margin:13px 0}
+.score span{font-size:18px;color:var(--muted);font-weight:500;letter-spacing:normal}
+.topic{padding:17px;background:#fbfcff;border:1px solid var(--line);border-radius:13px;margin:12px 0}
+.topichead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:0 0 11px}
+.topichead span{color:#44617e;font-variant-numeric:tabular-nums;white-space:nowrap}
+.topictrack{background:#e4ecf5;height:8px;border-radius:20px;overflow:hidden}.topictrack div{height:100%;background:var(--green);border-radius:20px}
+.resultactions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+footer{text-align:center;color:#94a0ac;font-size:12px;margin-top:20px}
+@media(max-width:520px){main{margin:18px auto 30px}header small{display:none}.option{padding:14px}.actions{align-items:stretch}.action-right{flex:1;justify-content:flex-end}.action-right .primary{flex:1}.quiet{font-size:14px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head><body>
+<main>
+<header><span>УОБР / ИСКУССТВЕННЫЙ ИНТЕЛЛЕКТ</span><small>Диагностика до обучения</small></header>
+<article id="intro">
+<div class="eyebrow">Проверь свои знания</div>
+<h1>Насколько хорошо ты разбираешься в работе с ИИ?</h1>
+<p class="lead">25 вопросов о применении искусственного интеллекта в рабочих задачах: базовые принципы, безопасность, тексты, документы, презентации и встречи.</p>
+<div class="chips"><span class="chip">25 вопросов</span><span class="chip">20–25 минут</span><span class="chip">Можно пропустить вопрос</span></div>
+<p class="privacy"><strong>Тест добровольный и анонимный.</strong> Сайт не запрашивает имя и почту, не отправляет ответы организаторам. Результат появится у тебя в браузере.</p>
+<button id="start" class="primary">Начать тест →</button>
+<p class="small">За каждый полностью правильный ответ — 1 балл. В заданиях с несколькими вариантами нужно выбрать все верные и ни одного лишнего. Проходной порог не установлен: это не аттестация.</p>
+</article>
+<article id="quiz" class="hide">
+<div class="top"><span id="progressText"></span><span id="section"></span></div>
+<div class="progress"><div id="bar"></div></div>
+<span id="type" class="type"></span>
+<h2 id="prompt"></h2>
+<p id="help" class="muted"></p>
+<div id="options" class="options"></div>
+<div class="actions">
+<button id="back" class="outline">← Назад</button>
+<div class="action-right"><button id="skip" class="quiet">Не знаю</button><button id="next" class="primary">Дальше →</button></div>
+</div>
+</article>
+<article id="result" class="hide">
+<div class="eyebrow">Тест завершён</div>
+<h1>Твой результат</h1>
+<div class="score" id="score"></div>
+<p id="summary" class="lead"></p>
+<h2>Результаты по темам</h2>
+<p class="muted">Так видно, в каких разделах у тебя уже есть опора, а к каким полезно вернуться. Баллы отражают ответы на вопросы, а не фактические навыки в работе.</p>
+<div id="topics"></div>
+<div class="privacy"><strong>Ответы никому не отправлялись.</strong> Результат можно скопировать или скачать, чтобы сохранить для себя.</div>
+<div class="resultactions">
+<button id="copy" class="primary">Скопировать результат</button>
+<button id="download" class="outline">Скачать результат</button>
+<button id="restart" class="outline">Пройти заново</button>
+</div><p class="small" id="status" role="status"></p>
+</article>
+<footer>ИИ для УОБР · тестирование перед программой обучения</footer>
+</main>
+<script src="questions.js"></script>
+<script src="app.js"></script>
+</body></html>
